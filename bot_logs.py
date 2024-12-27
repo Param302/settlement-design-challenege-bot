@@ -35,4 +35,46 @@ async def log_member_join(bot, channel_id, member):
     await channel.send(embed=embed)
 
 
+async def log_member_leave(bot, channel_id, member):
+    channel = bot.get_channel(channel_id)
+    if not channel:
+        print(f"Could not find channel with ID {channel_id}")
+        return
+    
+    embed = create_embed(
+        title=f"Member Left",
+        description=f"{member.mention} has left the server.",
+        color=discord.Color.red(),
+        timestamp=datetime.now()
+    )
+    embed.set_thumbnail(url=member.avatar.url if member.avatar else None)
+    embed.add_field(name="Username", value=member.name, inline=True)
+    embed.add_field(name="User ID", value=member.id, inline=True)
+    await channel.send(embed=embed)
+
+
+async def send_welcome_dm(member):
+    try:
+        server_image_url = "https://avatars.githubusercontent.com/u/181232261?s=200&v=4"  # Replace with your server image URL
+        embed = create_embed(
+            title=f"Welcome to {member.guild.name.title()}!",
+            description="We're glad to have you here.",
+            color=discord.Color.blue(),
+            timestamp=datetime.now()
+        )
+        embed.set_thumbnail(url=server_image_url)
+        embed.add_field(
+            name="Get Started",
+            value="To join a team, use the **`/jointeam`** command:```/jointeam student_mail_id```",
+            inline=False
+        )
+        embed.add_field(
+            name="Need Help?",
+            value="If you have any questions, feel free to reply here.",
+            inline=False
+        )
+        await member.send(embed=embed)
+    except discord.Forbidden:
+        print(f"Could not send DM to {member.name}")
+
 
