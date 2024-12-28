@@ -1,10 +1,9 @@
-from datetime import datetime
 import os
+from discord import Intents
 from dotenv import load_dotenv
 from discord.ext import commands
 from verification import verify_user
-from discord import Color, Intents
-from utils import create_embed, email_in_db, email_already_verified, refine_email, valid_format
+from utils import Embeds, EmailHandler, MessageHandler
 from bot_logs import log_bot_start, log_member_join, log_member_leave, send_welcome_dm
 
 load_dotenv()
@@ -18,6 +17,9 @@ intents = Intents.default()
 intents.members = True 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+handle_email = EmailHandler()
+handle_message = MessageHandler(bot, handle_email)
+
 
 @bot.event
 async def on_ready():
@@ -27,8 +29,8 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    await log_member_join(bot, CHANNEL_JOIN_LEAVE_LOG, member)
     await send_welcome_dm(member)
+    await log_member_join(bot, CHANNEL_JOIN_LEAVE_LOG, member)
 
 
 @bot.event
@@ -36,51 +38,24 @@ async def on_member_remove(member):
     await log_member_leave(bot, CHANNEL_JOIN_LEAVE_LOG, member)
 
 
-# call verify_user when a user DMs the bot
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
-        return
-    if message.guild is not None:
-        return
-    print(f"Received DM from {message.author}")
-    print("Message content:", message.content)
-    channel = bot.get_channel(CHANNEL_VERIFICATION_LOG)
-    
-    email = refine_email(message.content)
-    if not valid_format(email):
-        embed = create_embed(
-            title="Invalid Email Format",
-            description="Please provide a valid IITM student email ID.",
-            timestamp=datetime.now(),
-            color=Color.orange()
-        )
-        await message.channel.send(embed=embed)
-        return
-    
-    if not email_in_db(email):
-        embed = create_embed(
-            title="Email Not Registered",
-            description="Make sure you have registered your email",
-            timestamp=datetime.now(),
-            color=Color.red()
-        )
-        await message.channel.send(embed=embed)
-        return
-
-    if email_already_verified(email):
-        embed = create_embed(
-            title="Email Already Verified",
-            description="This email has already been verified.",
-            timestamp=datetime.now(),
-            color=Color.red()
-        )
-        await message.channel.send(embed=embed)
-        return
-
-    await verify_user(message, channel)
-
-
+    msg_status = handle_message(message)
+    match msg_status:
+        case 2: # DM message (not email)
+            await bot.get_channel(CHANNEL_INTERACTION_LOG).send(embed=Embeds.LOG_MEMBER_INTERACTION(message))
+        case 1: # bot message
+            return
+        case 0: # guild message
+            return
+        case 40:   # valid email
+            await verify_user(message, bot.get_channel(CHANNEL_VERIFICATION_LOG))
+        case -41:   # invalid email format
+            await message.channel.send(embed=Embeds.EMAIL_INVALID())
+        case -42:   # email not in db
+            await message.channel.send(embed=Embeds.EMAIL_NOT_REGISTERED())
+        case -43:   # email already verified
+            await message.channel.send(embed=Embeds.EMAIL_ALREADY_VERIFIED())
 
 
 if __name__ == "__main__":
