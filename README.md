@@ -14,6 +14,8 @@
 3. While assigning roles, for team:
     - If it's 1st user, their category, channels with respective roles will be formed
     - else, required roles will be assigned
+4. User DM is disabled
+    - organizers will be notified in verification channel
 
 #### Organizers
 _Rough rough_

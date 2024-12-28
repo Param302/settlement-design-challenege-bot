@@ -4,9 +4,6 @@ from utils import create_embed
 
 async def log_bot_start(bot, channel_id):
     channel = bot.get_channel(channel_id)
-    if not channel:
-        print(f"Could not find channel with ID {channel_id}")
-        return
 
     embed = create_embed(
         title="Bot Status",
@@ -19,9 +16,6 @@ async def log_bot_start(bot, channel_id):
 
 async def log_member_join(bot, channel_id, member):
     channel = bot.get_channel(channel_id)
-    if not channel:
-        print(f"Could not find channel with ID {channel_id}")
-        return
     
     embed = create_embed(
         title=f"New Member Joined",
@@ -37,9 +31,6 @@ async def log_member_join(bot, channel_id, member):
 
 async def log_member_leave(bot, channel_id, member):
     channel = bot.get_channel(channel_id)
-    if not channel:
-        print(f"Could not find channel with ID {channel_id}")
-        return
     
     embed = create_embed(
         title=f"Member Left",
@@ -65,7 +56,7 @@ async def send_welcome_dm(member):
         embed.set_thumbnail(url=server_image_url)
         embed.add_field(
             name="Get Started",
-            value="To join a team, use the **`/jointeam`** command:```/jointeam student_mail_id```",
+            value="Please share your IITM student email ID to join your team.",
             inline=False
         )
         embed.add_field(
