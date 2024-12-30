@@ -16,12 +16,18 @@
     - else, required roles will be assigned
 4. User DM is disabled
     - organizers will be notified in verification channel
+5. User Leaves the server
+    - User will be unverified
+    - Details will be logged in join-leave channel
+6. User can get manually verified by event team
 
 #### Organizers
 _Rough rough_
 
 1. Team analytics
 2. receive member interaction dms
+3. Manually verify users
+
 
 ### Details
 4-6 team size, separate channel for each team.
