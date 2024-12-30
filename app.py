@@ -2,7 +2,7 @@ import os
 from discord import Intents
 from dotenv import load_dotenv
 from discord.ext import commands
-from verification import verify_user
+from verification import VerificationHandler
 from utils import Embeds, EmailHandler, MessageHandler
 from bot_logs import log_bot_start, log_member_join, log_member_leave, send_welcome_dm
 
@@ -19,6 +19,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 handle_email = EmailHandler()
 handle_message = MessageHandler(bot, handle_email)
+handle_verification = VerificationHandler()
 
 
 @bot.event
@@ -50,13 +51,9 @@ async def on_message(message):
             return
         case 40:   # valid email
             # if member is verified (has verified role), return
-            await verify_user(message, bot.get_channel(CHANNEL_VERIFICATION_LOG))
+            await handle_verification(message, bot.get_channel(CHANNEL_VERIFICATION_LOG))
         case -41:   # invalid email format
             await message.channel.send(embed=Embeds.EMAIL_INVALID())
-        # case -42:   # email not in db
-        #     await message.channel.send(embed=Embeds.EMAIL_NOT_REGISTERED())
-        # case -43:   # email already verified
-        #     await message.channel.send(embed=Embeds.EMAIL_ALREADY_VERIFIED())
 
 
 if __name__ == "__main__":

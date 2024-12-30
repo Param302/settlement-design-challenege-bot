@@ -247,6 +247,15 @@ class Embeds:
             timestamp=datetime.now(),
             color=Color.green()
         )
+    
+    @staticmethod
+    def USER_ALREADY_VERIFIED():
+        return create_embed(
+            title="Already Verified",
+            description="You have already been verified.",
+            timestamp=datetime.now(),
+            color=Color.blue()
+        )
 
 
 # ! Update the sheet, create new sheet, verified column and discord id for each email 
@@ -262,10 +271,17 @@ class DBManager:
     def get_team(self, team_id):
         return self.db.get(team_id)
     
+    def get_team_details_by_email(self, email):
+        team_id, member = self.find_record_by("email", email)
+        if team_id == -1:
+            return -1
+        return self.get_team(team_id), member
+
     def find_record_by(self, key, value):
+        print("Finding record by", key, value, type(key), type(value))
         for team_id, team in self.db.items():
             for member in team["Members"]:
-                if member.get(key) == value:
+                if member[key] == value:
                     return team_id, member
         return -1, -1
     
@@ -282,8 +298,13 @@ class DBManager:
         return member.get("verified"), member
 
     def verify_member(self, email, discord_id):
-        status, member = self.is_email_verified(email)
+        member_status, _ = self.is_member_verified(discord_id)
 
+        if member_status != -1 and member_status:
+            print("Verified hai bhyiiii!!!", self.is_member_verified(discord_id))
+            return -3
+        
+        status, member = self.is_email_verified(email)
         if status==-1:
             return -1
         
