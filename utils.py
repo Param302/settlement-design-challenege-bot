@@ -116,21 +116,129 @@ class EmailHandler:
         email_pattern = re.compile(r"^(2[1-9])(f|ds|dp)[1-3]\d{6}@(ds|es)\.study\.iitm\.ac\.in$")
         return email_pattern.match(email)
 
-    # def _email_in_db(self, email, data):
-    #     return email in data
-    
-    # def _email_already_verified(self, email):
-    #     return False
-
     def __call__(self, email) -> int:
         email = self._refine_email(email)
         if not self._is_valid_format(email):
             return -41
-        # if not self._email_in_db(email, data):
-        #     return -42
-        # if self._email_already_verified(email):
-        #     return -43
         return 40
+
+
+# ! Update the sheet, create new sheet, verified column and discord id for each email 
+# currently, use a dictionary to store the data
+
+class DBManager:
+    """
+    DataBase Manager
+    """
+    def __init__(self):
+        self.db = data
+    
+    def get_team(self, team_id):
+        return self.db.get(team_id)
+    
+    def get_team_details_by_email(self, email):
+        team_id, member = self.find_record_by("email", email)
+        if team_id == -1:
+            return -1
+        return self.get_team(team_id), member
+
+    def find_record_by(self, key, value):
+        print("Finding record by", key, value, type(key), type(value))
+        for team_id, team in self.db.items():
+            for member in team["Members"]:
+                if member[key] == value:
+                    return team_id, member
+        return -1, -1
+    
+    def is_member_verified(self, discord_id):
+        team_id, member = self.find_record_by("discord_id", discord_id)
+        if team_id == -1:
+            return -1, -1
+        return member.get("verified"), member
+
+    def is_email_verified(self, member_email):
+        team_id, member = self.find_record_by("email", member_email)
+        if team_id == -1:
+            return -1, -1
+        return member.get("verified"), member
+
+    def verify_member(self, email, discord_id):
+        member_status, _ = self.is_member_verified(discord_id)
+
+        if member_status != -1 and member_status:
+            print("Verified hai bhyiiii!!!", self.is_member_verified(discord_id))
+            return -3
+        
+        status, member = self.is_email_verified(email)
+        if status==-1:
+            return -1
+        
+        if status:
+            return -2
+
+        member["verified"] = True
+        member["discord_id"] = discord_id
+        return 0
+    
+    def unverify_member(self, email):
+        status, member = self.is_email_verified(email)
+
+        if status==-1:
+            return -1
+
+        if not status:
+            return -2
+    
+        member["verified"] = False
+        member["discord_id"] = None
+        return 0
+
+
+class TeamCategoryManager:
+    """
+    if only one member is verified, 
+    - create respective team category
+    - create respective team channels
+    - create respective team role
+    - connect roles with category
+    - assign roles to that member
+    - rename member nickname to registered name
+
+    if more than one member is verified, then 
+    - assign roles to all respective team members
+
+    if member is leader, then
+    - assign team leader role to that member
+    """
+    """
+    Each team will have a category,
+    in a category, there will be following channels:
+    - structure
+    - operations
+    - human factor
+    - automation
+    - team vc
+    - general chat
+
+    Each team will have a role, (team name) with following perms:
+    - read messages
+    - send messages
+    - connect to voice
+    - view channel
+    - send tts messages
+    - embed links
+    - attach files
+    - read message history
+    - share screen
+    - add reactions
+    - send voice messages
+    """
+
+
+
+
+
+
 
 class Embeds:
 
@@ -256,74 +364,3 @@ class Embeds:
             timestamp=datetime.now(),
             color=Color.blue()
         )
-
-
-# ! Update the sheet, create new sheet, verified column and discord id for each email 
-# currently, use a dictionary to store the data
-
-class DBManager:
-    """
-    DataBase Manager
-    """
-    def __init__(self):
-        self.db = data
-    
-    def get_team(self, team_id):
-        return self.db.get(team_id)
-    
-    def get_team_details_by_email(self, email):
-        team_id, member = self.find_record_by("email", email)
-        if team_id == -1:
-            return -1
-        return self.get_team(team_id), member
-
-    def find_record_by(self, key, value):
-        print("Finding record by", key, value, type(key), type(value))
-        for team_id, team in self.db.items():
-            for member in team["Members"]:
-                if member[key] == value:
-                    return team_id, member
-        return -1, -1
-    
-    def is_member_verified(self, discord_id):
-        team_id, member = self.find_record_by("discord_id", discord_id)
-        if team_id == -1:
-            return -1, -1
-        return member.get("verified"), member
-
-    def is_email_verified(self, member_email):
-        team_id, member = self.find_record_by("email", member_email)
-        if team_id == -1:
-            return -1, -1
-        return member.get("verified"), member
-
-    def verify_member(self, email, discord_id):
-        member_status, _ = self.is_member_verified(discord_id)
-
-        if member_status != -1 and member_status:
-            print("Verified hai bhyiiii!!!", self.is_member_verified(discord_id))
-            return -3
-        
-        status, member = self.is_email_verified(email)
-        if status==-1:
-            return -1
-        
-        if status:
-            return -2
-
-        member["verified"] = True
-        member["discord_id"] = discord_id
-        return 0
-    
-    def unverify_member(self, email):
-        status, member = self.is_email_verified(email)
-
-        if status==-1:
-            return -1
-
-        if not status:
-            return -2
-    
-        member["verified"] = False
-        member["discord_id"] = None
-        return 0
