@@ -49,13 +49,14 @@ async def on_message(message):
         case 0: # guild message
             return
         case 40:   # valid email
+            # if member is verified (has verified role), return
             await verify_user(message, bot.get_channel(CHANNEL_VERIFICATION_LOG))
         case -41:   # invalid email format
             await message.channel.send(embed=Embeds.EMAIL_INVALID())
-        case -42:   # email not in db
-            await message.channel.send(embed=Embeds.EMAIL_NOT_REGISTERED())
-        case -43:   # email already verified
-            await message.channel.send(embed=Embeds.EMAIL_ALREADY_VERIFIED())
+        # case -42:   # email not in db
+        #     await message.channel.send(embed=Embeds.EMAIL_NOT_REGISTERED())
+        # case -43:   # email already verified
+        #     await message.channel.send(embed=Embeds.EMAIL_ALREADY_VERIFIED())
 
 
 if __name__ == "__main__":

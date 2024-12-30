@@ -3,7 +3,59 @@ from datetime import datetime
 from discord import Color, Embed, Message
 
 data = {
-    "21f1234567@ds.study.iitm.ac.in": "Param",
+    1: {
+        "Team Name": "Dynamic Achievers",
+        "Total Members": 4,
+        "Members": [
+            {"email": "22ds1195676@es.study.iitm.ac.in", "name": "Kavita Mehta", "verified": False, "discord_id": None},
+            {"email": "27ds3369641@ds.study.iitm.ac.in", "name": "Neha Jain", "verified": False, "discord_id": None, "leader": True},
+            {"email": "26ds3122880@ds.study.iitm.ac.in", "name": "Manish Patel", "verified": False, "discord_id": None},
+            {"email": "29dp2169012@ds.study.iitm.ac.in", "name": "Priya Joshi", "verified": False, "discord_id": None},
+        ],
+    },
+    2: {
+        "Team Name": "Persistent Thinkers",
+        "Total Members": 6,
+        "Members": [
+            {"email": "24dp2397095@es.study.iitm.ac.in", "name": "Ramesh Iyer", "verified": False, "discord_id": None},
+            {"email": "27ds3116586@ds.study.iitm.ac.in", "name": "Ramesh Gupta", "verified": False, "discord_id": None},
+            {"email": "21dp3104587@ds.study.iitm.ac.in", "name": "Kavita Patel", "verified": False, "discord_id": None},
+            {"email": "29dp3112299@es.study.iitm.ac.in", "name": "Sanjay Jain", "verified": False, "discord_id": None},
+            {"email": "29f1101297@es.study.iitm.ac.in", "name": "Vikram Joshi", "verified": False, "discord_id": None, "leader": True},
+            {"email": "21dp2114529@es.study.iitm.ac.in", "name": "Ramesh Reddy", "verified": False, "discord_id": None},
+        ],
+    },
+    3: {
+        "Team Name": "Creative Explorers",
+        "Total Members": 4,
+        "Members": [
+            {"email": "29ds2258290@ds.study.iitm.ac.in", "name": "Arjun Sharma", "verified": False, "discord_id": None, "leader": True},
+            {"email": "21ds3116945@es.study.iitm.ac.in", "name": "Vikram Patel", "verified": False, "discord_id": None},
+            {"email": "21dp3396612@ds.study.iitm.ac.in", "name": "Neha Joshi", "verified": False, "discord_id": None},
+            {"email": "21ds2371392@ds.study.iitm.ac.in", "name": "Neha Joshi", "verified": False, "discord_id": None},
+        ],
+    },
+    4: {
+        "Team Name": "Intrepid Explorers",
+        "Total Members": 4,
+        "Members": [
+            {"email": "21ds3150305@es.study.iitm.ac.in", "name": "Anjali Sharma", "verified": False, "discord_id": None},
+            {"email": "29ds2144879@ds.study.iitm.ac.in", "name": "Manish Jain", "verified": False, "discord_id": None, "leader": True},
+            {"email": "27ds1230945@ds.study.iitm.ac.in", "name": "Priya Joshi", "verified": False, "discord_id": None},
+            {"email": "25dp1255001@ds.study.iitm.ac.in", "name": "Sanjay Mehta", "verified": False, "discord_id": None},
+        ],
+    },
+    5: {
+        "Team Name": "Persistent Pioneers",
+        "Total Members": 5,
+        "Members": [
+            {"email": "23dp2163699@es.study.iitm.ac.in", "name": "Kavita Choudhary", "verified": False, "discord_id": None},
+            {"email": "22ds339011@es.study.iitm.ac.in", "name": "Ramesh Joshi", "verified": False, "discord_id": None},
+            {"email": "21f3333668@es.study.iitm.ac.in", "name": "Neha Patel", "verified": False, "discord_id": None, "leader": True},
+            {"email": "21f3391640@ds.study.iitm.ac.in", "name": "Riya Joshi", "verified": False, "discord_id": None},
+            {"email": "25dp3325396@ds.study.iitm.ac.in", "name": "Vikram Patel", "verified": False, "discord_id": None},
+        ],
+    },
 }
 
 
@@ -64,20 +116,20 @@ class EmailHandler:
         email_pattern = re.compile(r"^(2[1-9])(f|ds|dp)[1-3]\d{6}@(ds|es)\.study\.iitm\.ac\.in$")
         return email_pattern.match(email)
 
-    def _email_in_db(self, email, data):
-        return email in data
+    # def _email_in_db(self, email, data):
+    #     return email in data
     
-    def _email_already_verified(self, email):
-        return False
+    # def _email_already_verified(self, email):
+    #     return False
 
     def __call__(self, email) -> int:
         email = self._refine_email(email)
         if not self._is_valid_format(email):
             return -41
-        if not self._email_in_db(email, data):
-            return -42
-        if self._email_already_verified(email):
-            return -43
+        # if not self._email_in_db(email, data):
+        #     return -42
+        # if self._email_already_verified(email):
+        #     return -43
         return 40
 
 class Embeds:
@@ -120,6 +172,7 @@ class Embeds:
 
     @staticmethod
     def LOG_EMAIL_VERIFIED(user, email):
+        # ! Add team details and member details
         return create_embed(
             title="User Verified",
             description=f"{user.mention} has been verified with email `{email}`.",
@@ -194,3 +247,62 @@ class Embeds:
             timestamp=datetime.now(),
             color=Color.green()
         )
+
+
+# ! Update the sheet, create new sheet, verified column and discord id for each email 
+# currently, use a dictionary to store the data
+
+class DBManager:
+    """
+    DataBase Manager
+    """
+    def __init__(self):
+        self.db = data
+    
+    def get_team(self, team_id):
+        return self.db.get(team_id)
+    
+    def find_record_by(self, key, value):
+        for team_id, team in self.db.items():
+            for member in team["Members"]:
+                if member.get(key) == value:
+                    return team_id, member
+        return -1, -1
+    
+    def is_member_verified(self, discord_id):
+        team_id, member = self.find_record_by("discord_id", discord_id)
+        if team_id == -1:
+            return -1, -1
+        return member.get("verified"), member
+
+    def is_email_verified(self, member_email):
+        team_id, member = self.find_record_by("email", member_email)
+        if team_id == -1:
+            return -1, -1
+        return member.get("verified"), member
+
+    def verify_member(self, email, discord_id):
+        status, member = self.is_email_verified(email)
+
+        if status==-1:
+            return -1
+        
+        if status:
+            return -2
+
+        member["verified"] = True
+        member["discord_id"] = discord_id
+        return 0
+    
+    def unverify_member(self, email):
+        status, member = self.is_email_verified(email)
+
+        if status==-1:
+            return -1
+
+        if not status:
+            return -2
+    
+        member["verified"] = False
+        member["discord_id"] = None
+        return 0
