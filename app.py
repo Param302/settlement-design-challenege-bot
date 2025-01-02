@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 from discord.ext.commands import Bot
 from verification import VerificationHandler
-from utils import Embeds, EmailHandler, MessageHandler
-from discord import app_commands, Intents, Interaction, Object
+from utils import Embeds, EmailHandler, MessageHandler, TeamManager
+from discord import app_commands, Intents, Interaction, Object, Guild
 from bot_logs import log_bot_start, log_member_join, log_member_leave, send_welcome_dm
 
 load_dotenv()
@@ -13,6 +13,7 @@ CHANNEL_EVENT_ANALYTICS = int(os.getenv('CHANNEL_EVENT_ANALYTICS'))
 CHANNEL_INTERACTION_LOG = int(os.getenv('CHANNEL_INTERACTION_LOG'))
 CHANNEL_JOIN_LEAVE_LOG = int(os.getenv('CHANNEL_JOIN_LEAVE_LOG'))
 CHANNEL_VERIFICATION_LOG = int(os.getenv('CHANNEL_VERIFICATION_LOG'))
+ROLE_EVERYONE = int(os.getenv('ROLE_EVERYONE'))
 ROLE_VERIFIED = int(os.getenv('ROLE_VERIFIED'))
 
 intents = Intents.all()
@@ -20,9 +21,11 @@ intents.members = True
 bot = Bot(command_prefix="!", intents=intents)
 server = Object(id=GUILD_ID)
 print(GUILD_ID)
+print(server)
 handle_email = EmailHandler()
 handle_message = MessageHandler(bot, handle_email)
 handle_verification = VerificationHandler(bot)
+manage_team = TeamManager(bot)
 
 
 @bot.event
@@ -31,8 +34,8 @@ async def on_ready():
     print(f"Bot is online as {bot.user}")
     await bot.tree.sync(guild=server)
     await log_bot_start(bot, CHANNEL_INTERACTION_LOG)
-    handle_verification.guild = bot.get_guild(GUILD_ID)
-    handle_verification.verified_role = handle_verification.guild.get_role(ROLE_VERIFIED)
+    handle_verification.guild = manage_team.guild = bot.get_guild(GUILD_ID)
+    handle_verification.verified_role = manage_team.verified_role = handle_verification.guild.get_role(ROLE_VERIFIED)
     handle_verification.verification_log_channel = handle_verification.guild.get_channel(CHANNEL_VERIFICATION_LOG)
 
 
@@ -61,7 +64,8 @@ async def on_message(message):
             if handle_verification.is_user_verified(message.author.id):
                 await message.channel.send(embed=Embeds.USER_ALREADY_VERIFIED())
                 return
-            await handle_verification(message)
+            team_details = await handle_verification(message)
+            # await team_category_manager.handle_team_creation(team_details, message.author)
         case -41:   # invalid email format
             await message.channel.send(embed=Embeds.EMAIL_INVALID())
 
@@ -69,7 +73,10 @@ async def on_message(message):
 @bot.tree.command(name="jointeam", description="Join your team with your student email ID.", guild=server)
 @app_commands.describe(student_mail_id="Your Student email ID.")
 async def jointeam(interaction: Interaction, student_mail_id: str):
-    await handle_verification(student_mail_id, interaction)
+    team_details = await handle_verification(student_mail_id, interaction)
+    # await interaction.guild.create_category(team_details['Team Name'])
+    #! BELOW NOT WORKING, ABOVE IS WORKING
+    await manage_team(team_details, interaction.user)
 
 if __name__ == "__main__":
     bot.run(TOKEN)

@@ -46,7 +46,7 @@ class VerificationHandler:
 
                 await self.send_embed(Embeds.EMAIL_VERIFIED(), msg, interaction)
                 await self.add_verified_role(interaction.user if interaction else self.guild.get_member(message.author.id))
-                
+                return db.get_team_details_by_email(refine_email(msg))
                 # give roles & handle category
     
     async def add_verified_role(self, member):
@@ -59,3 +59,10 @@ class VerificationHandler:
     def is_user_verified(self, user_id):
         member = self.guild.get_member(user_id)
         return self.verified_role.id in member.roles
+    
+    # async def manage_category(self, member):
+
+        # if self.is_member_verified(member):
+        #     await member.move_to(self.verified_category)
+        # else:
+        #     await member.move_to(self.unverified_category)

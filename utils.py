@@ -1,6 +1,8 @@
 import re
 from datetime import datetime
 from discord import Color, Embed, Message
+import discord
+from discord import CategoryChannel, TextChannel, VoiceChannel, Role
 
 data = {
     1: {
@@ -140,7 +142,7 @@ class DBManager:
         team_id, member = self.find_record_by("email", email)
         if team_id == -1:
             return -1
-        return self.get_team(team_id), member
+        return self.get_team(team_id)
 
     def find_record_by(self, key, value):
         print("Finding record by", key, value, type(key), type(value))
@@ -194,7 +196,7 @@ class DBManager:
         return 0
 
 
-class TeamCategoryManager:
+class TeamManager:
     """
     if only one member is verified, 
     - create respective team category
@@ -234,9 +236,80 @@ class TeamCategoryManager:
     - send voice messages
     """
 
+    def __init__(self, bot):
+        self.bot = bot
 
+    async def create_category(self, team_name):
+        overwrites = {
+            self.guild.default_role: discord.PermissionOverwrite(read_messages=False, view_channel=False),
+            self.verified_role: discord.PermissionOverwrite(read_messages=False, view_channel=False)
+        }
+        return await self.guild.create_category(team_name, overwrites=overwrites)
 
+    async def create_channels(self, category: CategoryChannel):
+        channels = ["structure", "operations", "human factor", "automation", "team vc", "general chat"]
+        for channel in channels:
+            if "vc" in channel:
+                await category.create_voice_channel(channel)
+            else:
+                await category.create_text_channel(channel)
 
+    async def create_role(self, team_name):
+        permissions = discord.Permissions(
+            read_messages=True,
+            send_messages=True,
+            connect=True,
+            view_channel=True,
+            send_tts_messages=True,
+            embed_links=True,
+            attach_files=True,
+            read_message_history=True,
+            stream=True,
+            add_reactions=True,
+            send_voice_messages=True
+        )
+        role = await self.guild.create_role(name=team_name, permissions=permissions)
+        return await role.edit(position=1)
+
+    async def connect_role_with_category(self, role: Role, category: CategoryChannel):
+        overwrite_perms = discord.PermissionOverwrite(
+                read_messages=True,
+                send_messages=True,
+                connect=True,
+                view_channel=True,
+                send_tts_messages=True,
+                embed_links=True,
+                attach_files=True,
+                read_message_history=True,
+                stream=True,
+                add_reactions=True,
+                send_voice_messages=True
+            )
+        await category.set_permissions(role, overwrite=overwrite_perms)
+        for channel in category.channels:
+            await channel.set_permissions(role, overwrite=overwrite_perms)
+
+    async def assign_roles_to_member(self, member, role: Role, is_leader=False):
+        await member.add_roles(role)
+        if is_leader:
+            leader_role = discord.utils.get(self.guild.roles, id=1322141544299630612)
+            await member.add_roles(leader_role)
+        await member.edit(nick=member.display_name)
+
+    async def is_new_team(self, team_details):
+        role = discord.utils.get(self.guild.roles, name=team_details["Team Name"])
+        return role is None
+
+    async def __call__(self, team_details, member, is_leader=False):
+        if await self.is_new_team(team_details):
+            category = await self.create_category(team_details["Team Name"])
+            await self.create_channels(category, team_details["Team Name"])
+            role = await self.create_role(team_details["Team Name"])
+            await self.connect_role_with_category(role, category)
+            await self.assign_roles_to_member(member, role, is_leader)
+        else:
+            role = discord.utils.get(self.guild.roles, name=team_details["Team Name"])
+            await self.assign_roles_to_member(member, role, is_leader)
 
 
 
