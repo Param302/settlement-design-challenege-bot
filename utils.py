@@ -142,7 +142,7 @@ class DBManager:
         team_id, member = self.find_record_by("email", email)
         if team_id == -1:
             return -1
-        return self.get_team(team_id)
+        return self.get_team(team_id), member
 
     def find_record_by(self, key, value):
         print("Finding record by", key, value, type(key), type(value))
@@ -235,9 +235,25 @@ class TeamManager:
     - add reactions
     - send voice messages
     """
+    permissions = {
+        "read_messages": True,
+        "send_messages": True,
+        "connect": True,
+        "view_channel": True,
+        "send_tts_messages": True,
+        "embed_links": True,
+        "attach_files": True,
+        "read_message_history": True,
+        "stream": True,
+        "add_reactions": True,
+        "send_voice_messages": True
+    }
 
     def __init__(self, bot):
         self.bot = bot
+
+    def permission_handler(self, handler):
+        return handler(**self.permissions)
 
     async def create_category(self, team_name):
         overwrites = {
@@ -255,61 +271,41 @@ class TeamManager:
                 await category.create_text_channel(channel)
 
     async def create_role(self, team_name):
-        permissions = discord.Permissions(
-            read_messages=True,
-            send_messages=True,
-            connect=True,
-            view_channel=True,
-            send_tts_messages=True,
-            embed_links=True,
-            attach_files=True,
-            read_message_history=True,
-            stream=True,
-            add_reactions=True,
-            send_voice_messages=True
-        )
-        role = await self.guild.create_role(name=team_name, permissions=permissions)
+
+        role = await self.guild.create_role(name=team_name, permissions=self.permission_handler(discord.Permissions))
         return await role.edit(position=1)
 
     async def connect_role_with_category(self, role: Role, category: CategoryChannel):
-        overwrite_perms = discord.PermissionOverwrite(
-                read_messages=True,
-                send_messages=True,
-                connect=True,
-                view_channel=True,
-                send_tts_messages=True,
-                embed_links=True,
-                attach_files=True,
-                read_message_history=True,
-                stream=True,
-                add_reactions=True,
-                send_voice_messages=True
-            )
+        overwrite_perms = self.permission_handler(discord.PermissionOverwrite)
         await category.set_permissions(role, overwrite=overwrite_perms)
         for channel in category.channels:
             await channel.set_permissions(role, overwrite=overwrite_perms)
 
     async def assign_roles_to_member(self, member, role: Role, is_leader=False):
         await member.add_roles(role)
-        if is_leader:
-            leader_role = discord.utils.get(self.guild.roles, id=1322141544299630612)
-            await member.add_roles(leader_role)
-        await member.edit(nick=member.display_name)
+        await member.add_roles(self.team_leader_role if is_leader else self.team_member_role)
+    
+    async def set_member_nickname(self, member, nickname):
+        await member.edit(nick=nickname)
 
-    async def is_new_team(self, team_details):
-        role = discord.utils.get(self.guild.roles, name=team_details["Team Name"])
-        return role is None
+    async def is_new_team(self, team_name):
+        role = discord.utils.get(self.guild.roles, name=team_name)
+        category = discord.utils.get(self.guild.categories, name=team_name)
+        return role is None and category is None
 
-    async def __call__(self, team_details, member, is_leader=False):
-        if await self.is_new_team(team_details):
-            category = await self.create_category(team_details["Team Name"])
-            await self.create_channels(category, team_details["Team Name"])
-            role = await self.create_role(team_details["Team Name"])
+
+    async def __call__(self, user, team_details, member):
+        await self.set_member_nickname(user, member["name"])
+        team_name = team_details["Team Name"]
+        if await self.is_new_team(team_name):
+            category = await self.create_category(team_name)
+            await self.create_channels(category)
+            role = await self.create_role(team_name)
             await self.connect_role_with_category(role, category)
-            await self.assign_roles_to_member(member, role, is_leader)
         else:
-            role = discord.utils.get(self.guild.roles, name=team_details["Team Name"])
-            await self.assign_roles_to_member(member, role, is_leader)
+            role = discord.utils.get(self.guild.roles, name=team_name)
+
+        await self.assign_roles_to_member(user, role, is_leader=member.get("leader", False))
 
 
 

@@ -15,6 +15,8 @@ CHANNEL_JOIN_LEAVE_LOG = int(os.getenv('CHANNEL_JOIN_LEAVE_LOG'))
 CHANNEL_VERIFICATION_LOG = int(os.getenv('CHANNEL_VERIFICATION_LOG'))
 ROLE_EVERYONE = int(os.getenv('ROLE_EVERYONE'))
 ROLE_VERIFIED = int(os.getenv('ROLE_VERIFIED'))
+ROLE_TEAM_LEADER = int(os.getenv('ROLE_TEAM_LEADER'))
+ROLE_TEAM_MEMBER = int(os.getenv('ROLE_TEAM_MEMBER'))
 
 intents = Intents.all()
 intents.members = True
@@ -37,6 +39,9 @@ async def on_ready():
     handle_verification.guild = manage_team.guild = bot.get_guild(GUILD_ID)
     handle_verification.verified_role = manage_team.verified_role = handle_verification.guild.get_role(ROLE_VERIFIED)
     handle_verification.verification_log_channel = handle_verification.guild.get_channel(CHANNEL_VERIFICATION_LOG)
+    manage_team.team_leader_role = handle_verification.guild.get_role(ROLE_TEAM_LEADER)
+    manage_team.team_member_role = handle_verification.guild.get_role(ROLE_TEAM_MEMBER)
+
 
 
 @bot.event
@@ -64,7 +69,10 @@ async def on_message(message):
             if handle_verification.is_user_verified(message.author.id):
                 await message.channel.send(embed=Embeds.USER_ALREADY_VERIFIED())
                 return
-            team_details = await handle_verification(message)
+            team_details, member = await handle_verification(message)
+            if team_details != -1 and member != -1:
+                user = bot.get_guild(GUILD_ID).get_member(message.author.id)
+                await manage_team(user, team_details, member)
             # await team_category_manager.handle_team_creation(team_details, message.author)
         case -41:   # invalid email format
             await message.channel.send(embed=Embeds.EMAIL_INVALID())
@@ -73,10 +81,10 @@ async def on_message(message):
 @bot.tree.command(name="jointeam", description="Join your team with your student email ID.", guild=server)
 @app_commands.describe(student_mail_id="Your Student email ID.")
 async def jointeam(interaction: Interaction, student_mail_id: str):
-    team_details = await handle_verification(student_mail_id, interaction)
+    team_details, member = await handle_verification(student_mail_id, interaction)
     # await interaction.guild.create_category(team_details['Team Name'])
     #! BELOW NOT WORKING, ABOVE IS WORKING
-    await manage_team(team_details, interaction.user)
+    await manage_team(interaction.user, team_details, member)
 
 if __name__ == "__main__":
     bot.run(TOKEN)

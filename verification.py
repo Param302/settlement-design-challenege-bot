@@ -37,17 +37,18 @@ class VerificationHandler:
             case -3:    # User already verified
                 print("User already verified")
                 await self.send_embed(Embeds.USER_ALREADY_VERIFIED(), msg, interaction)
-                return
             case 0:     # Use email to verify
                 if interaction:
                     await self.verification_log_channel.send(embed=Embeds.LOG_EMAIL_VERIFIED(interaction.user, message))
+                    details = db.get_team_details_by_email(message)
                 else:
                     await self.verification_log_channel.send(embed=Embeds.LOG_EMAIL_VERIFIED(message.author, message.content))
+                    details = db.get_team_details_by_email(message.content)
 
                 await self.send_embed(Embeds.EMAIL_VERIFIED(), msg, interaction)
                 await self.add_verified_role(interaction.user if interaction else self.guild.get_member(message.author.id))
-                return db.get_team_details_by_email(refine_email(msg))
-                # give roles & handle category
+                return details
+        return -1, -1
     
     async def add_verified_role(self, member):
         await member.add_roles(self.verified_role)
