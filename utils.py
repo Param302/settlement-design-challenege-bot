@@ -348,14 +348,24 @@ class Embeds:
         return embed
 
     @staticmethod
-    def LOG_EMAIL_VERIFIED(user, email):
+    def LOG_EMAIL_VERIFIED(user, email, details):
+        team, member = details
         # ! Add team details and member details
-        return create_embed(
+        embed = create_embed(
             title="User Verified",
-            description=f"{user.mention} has been verified with email `{email}`.",
+            description=f"{user.mention} has been verified.",
             color=Color.green(),
             timestamp=datetime.now()
         )
+        embed.add_field(name="Username", value=member["name"], inline=True)
+        embed.add_field(name="User ID", value=user.id, inline=True)
+        embed.add_field(name="Team Name", value=team["Team Name"], inline=True)
+        embed.add_field(name="Email", value=email, inline=True)
+        if member.get("is_leader", False):
+            embed.add_field(name="Team Leader", value="Yes", inline=True)
+        embed.add_field(name="Total Members", value=team["Total Members"], inline=True)
+        return embed
+
     
     @staticmethod
     def LOG_MEMBER_INTERACTION(message):
