@@ -62,6 +62,12 @@ data = {
     },
 }
 
+team_colors = [
+    "#3357FF",  # Royal Blue
+    "#FF8C33",  # Dark Orange
+    "#8C33FF",  # Purple
+    "#daa520",  # Goldenrod
+]
 
 def create_embed(title, description, color, **kwargs):
     return Embed(
@@ -76,12 +82,7 @@ def refine_email(email):
     return email.strip().lower()
 
 def get_color():
-    team_colors = [
-    "#3357FF",  # Royal Blue
-    "#FF8C33",  # Dark Orange
-    "#8C33FF",  # Purple
-    "#daa520",  # Goldenrod
-]
+    global team_colors
     team_colors.append(team_colors.pop(0))
     return team_colors[-1]
 
