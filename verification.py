@@ -1,4 +1,7 @@
+import asyncio
+import email
 from utils import Embeds, refine_email, DBManager
+from discord.app_commands.errors import CommandInvokeError
 
 
 class VerificationHandler:
@@ -14,10 +17,19 @@ class VerificationHandler:
         return status
 
     async def send_embed(self, embed, message=None, interaction=None):
-        if interaction:
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-        await message.channel.send(embed=embed)
+        if interaction is None:
+            await message.channel.send(embed=embed)
+            return 0
+
+        try:
+            await interaction.response.defer(ephemeral=True, thinking=True)
+            await asyncio.sleep(7)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return 0
+        except Exception as e:
+            print(e)
+            return -1
+        
 
     async def __call__(self, message, interaction=None):
         msg = message if isinstance(message, str) else message
@@ -39,9 +51,15 @@ class VerificationHandler:
                     details = self.db.get_team_details_by_email(message.content)
                     await self.verification_log_channel.send(embed=Embeds.LOG_EMAIL_VERIFIED(message.author, message.content, details))
 
-                await self.send_embed(Embeds.EMAIL_VERIFIED(), msg, interaction)
+                response = await self.send_embed(Embeds.EMAIL_VERIFIED(), msg, interaction)
+                if response == -1:
+                    self.db.unverify_member(message)
+                    # self.bot.send_message()
+                    return -1, -1
+
                 await self.add_verified_role(interaction.user if interaction else self.guild.get_member(message.author.id))
                 return details
+    
         return -1, -1
     
     async def add_verified_role(self, member):

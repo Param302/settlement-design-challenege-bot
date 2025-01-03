@@ -80,13 +80,13 @@ async def on_message(message):
         case -41:   # invalid email format
             await message.channel.send(embed=Embeds.EMAIL_INVALID())
 
-
-@bot.tree.command(name="jointeam", description="Join your team with your student email ID.", guild=server)
-@app_commands.describe(student_mail_id="Your Student email ID.")
-async def jointeam(interaction: Interaction, student_mail_id: str):
-    team_details, member = await handle_verification(student_mail_id, interaction)
-    if team_details != -1 and member != -1: # team details found
-        await manage_team(interaction.user, team_details, member)
+#! Removing command for now - as DMs are working & discord interaction error
+# @bot.tree.command(name="jointeam", description="Join your team with your student email ID.", guild=server)
+# @app_commands.describe(student_mail_id="Your Student email ID.")
+# async def jointeam(interaction: Interaction, student_mail_id: str):
+#     team_details, member = await handle_verification(student_mail_id, interaction)
+#     if team_details != -1 and member != -1: # team details found
+#         await manage_team(interaction.user, team_details, member)
 
 if __name__ == "__main__":
     bot.run(TOKEN)

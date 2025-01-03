@@ -399,3 +399,12 @@ class Embeds:
             timestamp=datetime.now(),
             color=Color.blue()
         )
+    
+    @staticmethod
+    def INTERACTION_ERROR():
+        return create_embed(
+            title="Error",
+            description="There was an error processing your request. Please use the command again.",
+            timestamp=datetime.now(),
+            color=Color.orange()
+        )
