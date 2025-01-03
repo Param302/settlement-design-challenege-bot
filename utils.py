@@ -136,71 +136,20 @@ class DBManager:
     """
     def __init__(self, sheet_name, worksheet):
         self.sheet = GSheets(sheet_name, worksheet)
-        self.db = data
     
     def get_team(self, team_id):
-        return self.db.get(team_id)
-        # return self.sheet.get_record_by_team_id(team_id)
+        return self.sheet.get_record_by_team_id(team_id)
 
     
     def get_team_details_by_email(self, email):
-        # team = self.sheet.get_team_by_email(email)
-        # return team
-        team_id, member = self.find_record_by("email", email)
-        if team_id == -1:
-            return -1
-        return self.get_team(team_id), member
-
-    def find_record_by(self, key, value):
-        print("Finding record by", key, value, type(key), type(value))
-        for team_id, team in self.db.items():
-            for member in team["Members"]:
-                if member[key] == value:
-                    return team_id, member
-        return -1, -1
-    
-    def is_member_verified(self, discord_id):
-        team_id, member = self.find_record_by("discord_id", discord_id)
-        if team_id == -1:
-            return -1, -1
-        return member.get("verified"), member
-
-    def is_email_verified(self, member_email):
-        team_id, member = self.find_record_by("email", member_email)
-        if team_id == -1:
-            return -1, -1
-        return member.get("verified"), member
+        team = self.sheet.get_team_by_email(email)
+        return team, [member for member in team["Members"] if member["email"]==email][0]
 
     def verify_member(self, email, discord_id):
-        member_status, _ = self.is_member_verified(discord_id)
-
-        if member_status != -1 and member_status:
-            print("Verified hai bhyiiii!!!", self.is_member_verified(discord_id))
-            return -3
-        
-        status, member = self.is_email_verified(email)
-        if status==-1:
-            return -1
-        
-        if status:
-            return -2
-
-        member["verified"] = True
-        member["discord_id"] = discord_id
-        return 0
+        return self.sheet.verify_member(email, discord_id)
     
     def unverify_member(self, email):
-        status, member = self.is_email_verified(email)
-
-        if status==-1:
-            return -1
-
-        if not status:
-            return -2
-    
-        member["verified"] = False
-        member["discord_id"] = None
-        return 0
+        return self.sheet.unverify_member(email)
 
 
 class TeamManager:

@@ -1,22 +1,16 @@
 from utils import Embeds, refine_email, DBManager
 
-db = DBManager()
-
-def verify_user(message, interaction=None):
-    email = refine_email(message if isinstance(message, str) else message.content)
-    print(f"Verifying user with email {email}")
-    status = db.verify_member(email, interaction.author.id if interaction else message.author.id)
-    return status
 
 class VerificationHandler:
 
-    def __init__(self, bot):
+    def __init__(self, bot, sheet_name, worksheet):
         self.bot = bot
+        self.db = DBManager(sheet_name, worksheet)
 
     def verify_user(self, message, interaction=None):
         email = refine_email(message if isinstance(message, str) else message.content)
         print(f"Verifying user with email {email}")
-        status = db.verify_member(email, interaction.user.id if interaction else message.author.id)
+        status = self.db.verify_member(email, interaction.user.id if interaction else message.author.id)
         return status
 
     async def send_embed(self, embed, message=None, interaction=None):
@@ -39,10 +33,10 @@ class VerificationHandler:
                 await self.send_embed(Embeds.USER_ALREADY_VERIFIED(), msg, interaction)
             case 0:     # Use email to verify
                 if interaction:
-                    details = db.get_team_details_by_email(message)
+                    details = self.db.get_team_details_by_email(message)
                     await self.verification_log_channel.send(embed=Embeds.LOG_EMAIL_VERIFIED(interaction.user, message, details))
                 else:
-                    details = db.get_team_details_by_email(message.content)
+                    details = self.db.get_team_details_by_email(message.content)
                     await self.verification_log_channel.send(embed=Embeds.LOG_EMAIL_VERIFIED(message.author, message.content, details))
 
                 await self.send_embed(Embeds.EMAIL_VERIFIED(), msg, interaction)

@@ -17,6 +17,8 @@ ROLE_EVERYONE = int(os.getenv('ROLE_EVERYONE'))
 ROLE_VERIFIED = int(os.getenv('ROLE_VERIFIED'))
 ROLE_TEAM_LEADER = int(os.getenv('ROLE_TEAM_LEADER'))
 ROLE_TEAM_MEMBER = int(os.getenv('ROLE_TEAM_MEMBER'))
+SHEET_NAME = os.getenv('SHEET_NAME')
+WORKSHEET = os.getenv('WORKSHEET')
 
 intents = Intents.all()
 intents.members = True
@@ -26,7 +28,7 @@ print(GUILD_ID)
 print(server)
 handle_email = EmailHandler()
 handle_message = MessageHandler(bot, handle_email)
-handle_verification = VerificationHandler(bot)
+handle_verification = VerificationHandler(bot, SHEET_NAME, WORKSHEET)
 manage_team = TeamManager(bot)
 
 
@@ -41,6 +43,7 @@ async def on_ready():
     handle_verification.verification_log_channel = handle_verification.guild.get_channel(CHANNEL_VERIFICATION_LOG)
     manage_team.team_leader_role = handle_verification.guild.get_role(ROLE_TEAM_LEADER)
     manage_team.team_member_role = handle_verification.guild.get_role(ROLE_TEAM_MEMBER)
+    print("I am ready")
 
 
 
@@ -70,7 +73,7 @@ async def on_message(message):
                 await message.channel.send(embed=Embeds.USER_ALREADY_VERIFIED())
                 return
             team_details, member = await handle_verification(message)
-            if team_details != -1 and member != -1:
+            if team_details != -1 and member != -1: # team details found
                 user = bot.get_guild(GUILD_ID).get_member(message.author.id)
                 await manage_team(user, team_details, member)
             # await team_category_manager.handle_team_creation(team_details, message.author)
@@ -82,9 +85,8 @@ async def on_message(message):
 @app_commands.describe(student_mail_id="Your Student email ID.")
 async def jointeam(interaction: Interaction, student_mail_id: str):
     team_details, member = await handle_verification(student_mail_id, interaction)
-    # await interaction.guild.create_category(team_details['Team Name'])
-    #! BELOW NOT WORKING, ABOVE IS WORKING
-    await manage_team(interaction.user, team_details, member)
+    if team_details != -1 and member != -1: # team details found
+        await manage_team(interaction.user, team_details, member)
 
 if __name__ == "__main__":
     bot.run(TOKEN)

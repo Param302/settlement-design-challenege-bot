@@ -56,7 +56,7 @@ class GSheets:
                 "discord_id": data[i+3]
             })
             if i==2:
-                team_details["Members"][0]["is_leader"] = True
+                team_details["Members"][0]["leader"] = True
 
         return team_details
         
@@ -66,7 +66,7 @@ class GSheets:
         """
         record = [data["Team Id"], data["Team Name"]]
         for member in data["Members"]:
-            if member.get("is_leader"): # maintaing order, leader first
+            if member.get("leader"): # maintaing order, leader first
                 record.insert(2, member["name"])
                 record.insert(3, member["email"])
                 record.insert(4, member["verified"])
@@ -76,6 +76,9 @@ class GSheets:
             record.append(member["email"])
             record.append(member["verified"])
             record.append(member["discord_id"])
+        if len(data["Members"]) < 6:
+            for i in range(6-len(data["Members"])):
+                record.extend(["-", "-", "-", "-"])
         record.append(len(data["Members"]))
         return record
 
@@ -118,11 +121,30 @@ class GSheets:
                 if member["verified"] == "Yes": # Email already verified
                     return -2
                 member["verified"] = "Yes"
-                member["discord_id"] = discord_id
+                member["discord_id"] = str(discord_id)
                 break
         
         self.sheet.update([self._reformat_data(record)], f"A{m}:AA{m}")
         return 0
+
+    def unverify_member(self, email):
+        email_check = self.sheet.find(email)
+        if not email_check:
+            return -1
+
+        m = email_check.row
+        record = self._format_data_list(list(self.sheet.row_values(m)))
+
+        for member in record["Members"]:
+            if member["email"] == email:
+                if member["verified"] != "Yes":
+                    return -2
+                member["verified"] = "-"
+                member["discord_id"] = "-"
+                break
+        self.sheet.update([self._reformat_data(record)], f"A{m}:Z{m}")
+        return 0
+
 
     def update_record(self, record):
         """
