@@ -75,6 +75,15 @@ def create_embed(title, description, color, **kwargs):
 def refine_email(email):
     return email.strip().lower()
 
+def get_color():
+    team_colors = [
+    "#3357FF",  # Royal Blue
+    "#FF8C33",  # Dark Orange
+    "#8C33FF",  # Purple
+    "#daa520",  # Goldenrod
+]
+    team_colors.append(team_colors.pop(0))
+    return team_colors[-1]
 
 class MessageHandler:
     # if the message is from the bot, ignore it
@@ -126,9 +135,6 @@ class EmailHandler:
             return -41
         return 40
 
-
-# ! Update the sheet, create new sheet, verified column and discord id for each email 
-# currently, use a dictionary to store the data
 
 class DBManager:
     """
@@ -214,7 +220,10 @@ class TeamManager:
     async def create_category(self, team_name):
         overwrites = {
             self.guild.default_role: discord.PermissionOverwrite(read_messages=False, view_channel=False),
-            self.verified_role: discord.PermissionOverwrite(read_messages=False, view_channel=False)
+            self.verified_role: discord.PermissionOverwrite(read_messages=False, view_channel=False),
+            self.core_team_role: discord.PermissionOverwrite(read_messages=True, view_channel=True),
+            self.event_head_role: discord.PermissionOverwrite(read_messages=True, view_channel=True),
+            self.volunteer_role: discord.PermissionOverwrite(read_messages=True, view_channel=True)
         }
         return await self.guild.create_category(team_name, overwrites=overwrites)
 
@@ -227,8 +236,11 @@ class TeamManager:
                 await category.create_text_channel(channel)
 
     async def create_role(self, team_name):
-
-        role = await self.guild.create_role(name=team_name, permissions=self.permission_handler(discord.Permissions))
+        role = await self.guild.create_role(
+            name=team_name, 
+            permissions=self.permission_handler(discord.Permissions), 
+            color=discord.Color.from_str(get_color())
+            )
         return await role.edit(position=1)
 
     async def connect_role_with_category(self, role: Role, category: CategoryChannel):
