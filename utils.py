@@ -1,8 +1,10 @@
 import re
+import discord
+from gsheets import GSheets
 from datetime import datetime
 from discord import Color, Embed, Message
-import discord
-from discord import CategoryChannel, TextChannel, VoiceChannel, Role
+from discord import CategoryChannel, Role
+
 
 data = {
     1: {
@@ -132,13 +134,18 @@ class DBManager:
     """
     DataBase Manager
     """
-    def __init__(self):
+    def __init__(self, sheet_name, worksheet):
+        self.sheet = GSheets(sheet_name, worksheet)
         self.db = data
     
     def get_team(self, team_id):
         return self.db.get(team_id)
+        # return self.sheet.get_record_by_team_id(team_id)
+
     
     def get_team_details_by_email(self, email):
+        # team = self.sheet.get_team_by_email(email)
+        # return team
         team_id, member = self.find_record_by("email", email)
         if team_id == -1:
             return -1
